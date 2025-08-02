@@ -12,12 +12,12 @@ import { healthRoutes } from './routes/healthRoutes';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 17777;
 
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:17777',
   credentials: true
 }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));

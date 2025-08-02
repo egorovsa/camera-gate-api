@@ -57,13 +57,13 @@ docker build -t camera-api .
 2. Запустите контейнер:
 
 ```bash
-docker run -p 3000:3000 camera-api
+docker run -p 17777:17777 camera-api
 ```
 
 3. Для запуска в фоновом режиме:
 
 ```bash
-docker run -d -p 3000:3000 camera-api
+docker run -d -p 17777:17777 camera-api
 ```
 
 ## 📡 API Endpoints
@@ -104,7 +104,7 @@ docker run -d -p 3000:3000 camera-api
 
 ```bash
 curl -X POST \
-  http://localhost:3000/api/camera/data \
+  http://localhost:17777/api/camera/data \
   -H 'Content-Type: text/xml' \
   -d '<EventNotificationAlert>
     <activePostCount>1</activePostCount>
@@ -178,7 +178,7 @@ const xmlData = `<EventNotificationAlert>
   <isDataRetransmission>false</isDataRetransmission>
 </EventNotificationAlert>`;
 
-fetch('http://localhost:3000/api/camera/data', {
+fetch('http://localhost:17777/api/camera/data', {
   method: 'POST',
   headers: {
     'Content-Type': 'text/xml'
@@ -193,7 +193,7 @@ fetch('http://localhost:3000/api/camera/data', {
 
 Основные переменные окружения:
 
-- `PORT` - Порт сервера (по умолчанию: 3000)
+- `PORT` - Порт сервера (по умолчанию: 17777)
 - `NODE_ENV` - Окружение (development/production)
 - `CORS_ORIGIN` - Разрешенные источники для CORS
 - `GATE_LINK` - URL для отправки уведомлений о vehicle detection
