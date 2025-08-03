@@ -16,7 +16,7 @@ async function notifyVehicleDetection(
   }
 
   try {
-    const response = await axios.post(gateLink);
+    const response = await axios.get(gateLink);
 
     logger.info({
       message: "Vehicle detection notification sent successfully",
