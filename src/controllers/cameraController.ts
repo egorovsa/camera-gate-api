@@ -16,20 +16,7 @@ async function notifyVehicleDetection(
   }
 
   try {
-    const payload = {
-      timestamp: new Date().toISOString(),
-      eventType: eventData.eventType,
-      eventState: eventData.eventState,
-      eventDescription: eventData.eventDescription,
-      detectionData: eventData,
-    };
-
-    const response = await axios.post(gateLink, payload, {
-      timeout: 5000,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await axios.post(gateLink);
 
     logger.info({
       message: "Vehicle detection notification sent successfully",
