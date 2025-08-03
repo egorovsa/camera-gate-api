@@ -1,4 +1,4 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 // Типы для ответов API
 export interface ApiResponse<T = any> {
@@ -32,7 +32,7 @@ export interface DetectionRegionEntry {
   regionID: number;
   sensitivityLevel: number;
   RegionCoordinatesList: {
-    RegionCoordinates: RegionCoordinates[];
+    RegionCoordinates: RegionCoordinates | RegionCoordinates[];
   };
   detectionTarget: string;
   TargetRect: TargetRect;
@@ -44,10 +44,10 @@ export interface CameraEventData {
   eventState: string;
   eventDescription: string;
   DetectionRegionList: {
-    DetectionRegionEntry: DetectionRegionEntry[];
+    DetectionRegionEntry: DetectionRegionEntry | DetectionRegionEntry[];
   };
   channelName: string;
   detectionPictureTransType: string;
   detectionPicturesNumber: number;
   isDataRetransmission: boolean;
-} 
+}
