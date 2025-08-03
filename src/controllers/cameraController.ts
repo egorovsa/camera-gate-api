@@ -85,15 +85,18 @@ export const processCameraData = async (
     hasLinedetection: !!req.body.linedetection,
     bodyType: typeof req.body,
     bodyContent: JSON.stringify(req.body).substring(0, 500),
-    files: req.files ? Object.keys(req.files) : "no files",
+    xmlData,
   });
 
   // Если данных нет в body, пробуем получить из files (multipart)
-  if (!xmlData && req.files && (req.files as any).linedetection) {
-    const file = Array.isArray((req.files as any).linedetection)
-      ? (req.files as any).linedetection[0]
-      : (req.files as any).linedetection;
-    xmlData = file.buffer.toString("utf8");
+  if (!xmlData && req.files) {
+    const files = req.files as any[];
+    const linedetectionFile = files.find(
+      (file) => file.fieldname === "linedetection"
+    );
+    if (linedetectionFile) {
+      xmlData = linedetectionFile.buffer.toString("utf8");
+    }
   }
 
   // Если данных нет в body, пробуем получить из raw body

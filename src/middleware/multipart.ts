@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 
-// Настройка multer для обработки поля linedetection
-const upload = multer().fields([
-  { name: 'linedetection', maxCount: 1 }
-]);
+// Настройка multer для обработки любых полей (более гибко)
+const upload = multer().any();
 
 export const multipartMiddleware = (req: Request, res: Response, next: NextFunction) => {
   upload(req, res, (err) => {
