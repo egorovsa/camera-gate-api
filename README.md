@@ -97,8 +97,9 @@ docker run -d -p 3000:3000 camera-api
 ### Пример с curl:
 
 ```bash
+# Простой XML запрос
 curl -X POST \
-  http://localhost:3000/api/camera/data \
+  http://localhost:17777/api/camera/data \
   -H 'Content-Type: text/xml' \
   -d '<EventNotificationAlert>
     <activePostCount>1</activePostCount>
@@ -133,6 +134,11 @@ curl -X POST \
     <detectionPicturesNumber>1</detectionPicturesNumber>
     <isDataRetransmission>false</isDataRetransmission>
   </EventNotificationAlert>'
+
+# Multipart/form-data запрос (как отправляет камера)
+curl -X POST \
+  http://localhost:17777/api/camera/data \
+  -F "linedetection=@camera-data.xml"
 ```
 
 ### Пример с JavaScript:

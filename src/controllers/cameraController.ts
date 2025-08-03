@@ -8,19 +8,32 @@ import axios from "axios";
 async function notifyVehicleDetection(
   eventData: CameraEventData
 ): Promise<void> {
-  const targetUrl = process.env.GATE_LINK;
+  const gateLink = process.env.GATE_LINK;
 
-  if (!targetUrl) {
+  if (!gateLink) {
     logger.warn("GATE_LINK not configured, skipping vehicle notification");
     return;
   }
 
   try {
-    const response = await axios.get(targetUrl);
+    const payload = {
+      timestamp: new Date().toISOString(),
+      eventType: eventData.eventType,
+      eventState: eventData.eventState,
+      eventDescription: eventData.eventDescription,
+      detectionData: eventData,
+    };
+
+    const response = await axios.post(gateLink, payload, {
+      timeout: 5000,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     logger.info({
       message: "Vehicle detection notification sent successfully",
-      targetUrl,
+      targetUrl: gateLink,
       responseStatus: response.status,
       eventType: eventData.eventType,
     });
@@ -28,7 +41,7 @@ async function notifyVehicleDetection(
     logger.error({
       message: "Failed to send vehicle detection notification",
       error: error instanceof Error ? error.message : "Unknown error",
-      targetUrl: targetUrl,
+      targetUrl: gateLink,
       eventType: eventData.eventType,
     });
   }
@@ -75,15 +88,47 @@ export const processCameraData = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const rawData = req.body;
+  let xmlData = req.body.linedetection;
 
-  if (!rawData) {
-    res.status(400).json({ error: "No data provided" });
+  // Логируем входящие данные для отладки
+  logger.info({
+    message: "Received camera data",
+    contentType: req.get("Content-Type"),
+    bodyKeys: Object.keys(req.body),
+    hasLinedetection: !!req.body.linedetection,
+    bodyType: typeof req.body,
+    bodyContent: JSON.stringify(req.body).substring(0, 500),
+    files: req.files ? Object.keys(req.files) : "no files",
+  });
+
+  // Если данных нет в body, пробуем получить из files (multipart)
+  if (!xmlData && req.files && (req.files as any).linedetection) {
+    const file = Array.isArray((req.files as any).linedetection)
+      ? (req.files as any).linedetection[0]
+      : (req.files as any).linedetection;
+    xmlData = file.buffer.toString("utf8");
+  }
+
+  // Если данных нет в body, пробуем получить из raw body
+  if (!xmlData && req.body) {
+    // Ищем XML в теле запроса
+    const bodyStr =
+      typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const xmlMatch = bodyStr.match(
+      /<EventNotificationAlert[\s\S]*?<\/EventNotificationAlert>/
+    );
+    if (xmlMatch) {
+      xmlData = xmlMatch[0];
+    }
+  }
+
+  if (!xmlData) {
+    res.status(400).json({ error: "No linedetection data provided" });
     return;
   }
 
   // Парсим XML в JSON
-  let parsedData = await parseCameraData(rawData);
+  let parsedData = await parseCameraData(xmlData);
 
   if (!parsedData) {
     res.status(400).json({ error: "Invalid XML format" });
@@ -112,21 +157,28 @@ export const processCameraData = async (
       return region.detectionTarget === "vehicle";
     });
 
-    if (!vehicleRegion) {
-      return;
+    if (vehicleRegion) {
+      logger.info({
+        message:
+          "Vehicle detected in linedetection event, sending notification",
+        regionID: vehicleRegion.regionID,
+        eventType: parsedData.eventType,
+        detectionTarget: vehicleRegion.detectionTarget,
+      });
+
+      // Отправляем уведомление о vehicle detection
+      await notifyVehicleDetection(parsedData);
     }
-
-    logger.info({
-      message: "Vehicle detected in linedetection event, sending notification",
-      regionID: vehicleRegion?.regionID,
-      eventType: parsedData.eventType,
-      detectionTarget: vehicleRegion.detectionTarget,
-    });
-
-    // Отправляем уведомление о vehicle detection
-    await notifyVehicleDetection(parsedData);
   }
 
-  // Отправляем успешный ответ с распарсенными данными
-  res.status(200).json({ success: true });
+  // Отправляем успешный ответ
+  res.status(200).json({
+    success: true,
+    message: "Camera data processed successfully",
+    data: {
+      receivedAt: new Date().toISOString(),
+      eventType: parsedData.eventType,
+      eventState: parsedData.eventState,
+    },
+  });
 };

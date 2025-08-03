@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { processCameraData } from '../controllers/cameraController';
+import { multipartMiddleware } from '../middleware/multipart';
 
 const router = Router();
 
@@ -13,6 +14,6 @@ router.get('/status', (req, res) => {
 });
 
 // POST /api/camera/data - Прием XML данных с камеры
-router.post('/data', processCameraData);
+router.post('/data', multipartMiddleware, processCameraData);
 
 export { router as cameraRoutes }; 
