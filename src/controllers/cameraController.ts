@@ -82,11 +82,6 @@ export const processCameraData = async (
   logger.info({
     message: "Received camera data",
     contentType: req.get("Content-Type"),
-    bodyKeys: Object.keys(req.body),
-    hasLinedetection: !!req.body.linedetection,
-    bodyType: typeof req.body,
-    bodyContent: JSON.stringify(req.body).substring(0, 500),
-    xmlData,
   });
 
   // Если данных нет в body, пробуем получить из files (multipart)
@@ -129,9 +124,8 @@ export const processCameraData = async (
   // Логируем полученные данные
   logger.info({
     message: "Camera data received and parsed",
-    ...parsedData,
     ip: req.ip,
-    userAgent: req.get("User-Agent"),
+    // ...parsedData,
   });
 
   // Проверяем на vehicle detection при linedetection
