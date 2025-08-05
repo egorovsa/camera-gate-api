@@ -3,6 +3,7 @@ import { logger } from "../utils/logger";
 import { CameraEventData } from "../types";
 import * as xml2js from "xml2js";
 import axios from "axios";
+import { notificationService } from "../services/notificationService";
 
 // Функция для отправки уведомления о vehicle detection
 async function notifyVehicleDetection(
@@ -156,8 +157,11 @@ export const processCameraData = async (
         detectionTarget: vehicleRegion.detectionTarget,
       });
 
-      // Отправляем уведомление о vehicle detection
-      await notifyVehicleDetection(parsedData);
+      // Отправляем уведомление о vehicle detection с ограничением частоты
+      await notificationService.sendVehicleDetectionNotification(
+        parsedData,
+        notifyVehicleDetection
+      );
     }
   }
 
