@@ -55,7 +55,6 @@ async function checkAndHandleVehicleDetection(
       logger.info({
         message: "🚗 Vehicle detected in linedetection event",
         regionID: vehicleRegion.regionID,
-        eventType: parsedData.eventType,
         detectionTarget: vehicleRegion.detectionTarget,
       });
 
@@ -64,6 +63,17 @@ async function checkAndHandleVehicleDetection(
         parsedData,
         notifyVehicleDetection
       );
+
+      return;
+    }
+
+    const otherTargets = regions.map((region) => region.detectionTarget);
+
+    if (otherTargets.length > 0) {
+      logger.info({
+        message: "❓ Other targets detected in linedetection event",
+        targets: otherTargets.join(", "),
+      });
     }
   }
 }
@@ -99,8 +109,15 @@ async function parseCameraData(rawData: any): Promise<CameraEventData | null> {
           ? parseError.message
           : "Unknown parse error",
       receivedDataType: typeof rawData,
-      receivedDataLength: rawData ? (typeof rawData === 'string' ? rawData.length : 'object') : 'null',
-      receivedDataPreview: typeof rawData === 'string' ? rawData.substring(0, 200) + "..." : 'not a string',
+      receivedDataLength: rawData
+        ? typeof rawData === "string"
+          ? rawData.length
+          : "object"
+        : "null",
+      receivedDataPreview:
+        typeof rawData === "string"
+          ? rawData.substring(0, 200) + "..."
+          : "not a string",
     });
   } finally {
     return parsedData;
@@ -153,11 +170,11 @@ export const processCameraData = async (
   let parsedData = await parseCameraData(xmlData);
 
   if (!parsedData) {
-    logger.error({ 
-      message: "❌ Camera data not parsed", 
+    logger.error({
+      message: "❌ Camera data not parsed",
       ip: req.ip,
       xmlDataLength: xmlData ? xmlData.length : 0,
-      xmlDataPreview: xmlData ? xmlData.substring(0, 200) + "..." : "null"
+      xmlDataPreview: xmlData ? xmlData.substring(0, 200) + "..." : "null",
     });
     res.status(400).json({ error: "Invalid XML format" });
     return;
