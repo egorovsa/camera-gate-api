@@ -128,18 +128,18 @@ export const processCameraData = async (
     }
   }
 
-  // // Если данных нет в body, пробуем получить из raw body
-  // if (!xmlData && req.body) {
-  //   // Ищем XML в теле запроса
-  //   const bodyStr =
-  //     typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-  //   const xmlMatch = bodyStr.match(
-  //     /<EventNotificationAlert[\s\S]*?<\/EventNotificationAlert>/
-  //   );
-  //   if (xmlMatch) {
-  //     xmlData = xmlMatch[0];
-  //   }
-  // }
+  // Если данных нет в body, пробуем получить из raw body
+  if (!xmlData && req.body) {
+    // Ищем XML в теле запроса
+    const bodyStr =
+      typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const xmlMatch = bodyStr.match(
+      /<EventNotificationAlert[\s\S]*?<\/EventNotificationAlert>/
+    );
+    if (xmlMatch) {
+      xmlData = xmlMatch[0];
+    }
+  }
 
   if (!xmlData) {
     logger.error({ message: "❌ No linedetection data provided", ip: req.ip });
