@@ -142,7 +142,6 @@ export const processCameraData = async (
   }
 
   if (!xmlData) {
-    logger.error({ message: "❌ No linedetection data provided", ip: req.ip });
     res.status(400).json({ error: "No linedetection data provided" });
     return;
   }
