@@ -38,7 +38,14 @@ async function notifyVehicleDetection(
 async function checkAndHandleVehicleDetection(
   parsedData: CameraEventData
 ): Promise<void> {
-  // Проверяем на vehicle detection при linedetection
+  // Получаем список типов обнаружения из конфигурации
+  const detectionTargetsConfig = process.env.DETECTION_TARGETS || "vehicle";
+  const allowedTargets = detectionTargetsConfig
+    .split(",")
+    .map((target) => target.trim().toLowerCase())
+    .filter((target) => target.length > 0);
+
+  // Проверяем на разрешенные типы обнаружения при linedetection
   const detectionRegions = parsedData.DetectionRegionList?.DetectionRegionEntry;
   const isLineDetection = parsedData.eventType === "linedetection";
 
@@ -47,18 +54,26 @@ async function checkAndHandleVehicleDetection(
       ? detectionRegions
       : [detectionRegions];
 
-    const vehicleRegion = regions.find((region) => {
-      return region.detectionTarget === "vehicle";
+    // Ищем регионы с разрешенными типами обнаружения
+    const matchingRegions = regions.filter((region) => {
+      return allowedTargets.includes(region.detectionTarget.toLowerCase());
     });
 
-    if (vehicleRegion) {
+    if (matchingRegions.length > 0) {
+      const detectedTargets = matchingRegions.map(
+        (region) => region.detectionTarget
+      );
+
       logger.info({
-        message: "🚗 Vehicle detected in linedetection event",
-        regionID: vehicleRegion.regionID,
-        detectionTarget: vehicleRegion.detectionTarget,
+        message: `🚗 ${detectedTargets.join(
+          ", "
+        )} detected in linedetection event`,
+        regionIDs: matchingRegions.map((region) => region.regionID),
+        detectionTargets: detectedTargets,
+        allowedTargets: allowedTargets,
       });
 
-      // Отправляем уведомление о vehicle detection с ограничением частоты
+      // Отправляем уведомление о detection с ограничением частоты
       await notificationService.sendVehicleDetectionNotification(
         parsedData,
         notifyVehicleDetection
