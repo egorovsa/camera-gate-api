@@ -98,7 +98,9 @@ async function parseCameraData(rawData: any): Promise<CameraEventData | null> {
         parseError instanceof Error
           ? parseError.message
           : "Unknown parse error",
-      receivedData: rawData,
+      receivedDataType: typeof rawData,
+      receivedDataLength: rawData ? (typeof rawData === 'string' ? rawData.length : 'object') : 'null',
+      receivedDataPreview: typeof rawData === 'string' ? rawData.substring(0, 200) + "..." : 'not a string',
     });
   } finally {
     return parsedData;
@@ -115,6 +117,7 @@ export const processCameraData = async (
   logger.info({
     message: "🔵 Received camera data",
     ip: req.ip,
+    userAgent: req.get("User-Agent"),
   });
 
   // Если данных нет в body, пробуем получить из files (multipart)
@@ -150,7 +153,12 @@ export const processCameraData = async (
   let parsedData = await parseCameraData(xmlData);
 
   if (!parsedData) {
-    logger.error({ message: "❌ Camera data not parsed", ip: req.ip, xmlData });
+    logger.error({ 
+      message: "❌ Camera data not parsed", 
+      ip: req.ip,
+      xmlDataLength: xmlData ? xmlData.length : 0,
+      xmlDataPreview: xmlData ? xmlData.substring(0, 200) + "..." : "null"
+    });
     res.status(400).json({ error: "Invalid XML format" });
     return;
   }
