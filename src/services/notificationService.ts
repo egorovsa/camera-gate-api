@@ -2,7 +2,10 @@ import { logger } from "../utils/logger";
 
 class NotificationService {
   private lastNotificationTime: Date | null = null;
-  private readonly MIN_INTERVAL_MS = parseInt(process.env.MIN_INTERVAL_MS || "60000", 10); // 1 минута по умолчанию
+  private readonly MIN_INTERVAL_MS = parseInt(
+    process.env.MIN_INTERVAL_MS || "60000",
+    10
+  ); // 1 минута по умолчанию
 
   constructor() {
     logger.info({
@@ -21,8 +24,9 @@ class NotificationService {
     }
 
     const currentTime = Date.now();
-    const timeSinceLastNotification = currentTime - this.lastNotificationTime.getTime();
-    
+    const timeSinceLastNotification =
+      currentTime - this.lastNotificationTime.getTime();
+
     return timeSinceLastNotification >= this.MIN_INTERVAL_MS;
   }
 
@@ -43,12 +47,12 @@ class NotificationService {
     notificationFunction: (data: T) => Promise<void>
   ): Promise<void> {
     const currentTime = Date.now();
-    
+
     if (!this.canSendNotification()) {
-      logger.info({
-        message: "Vehicle detection notification skipped - too frequent",
+      logger.warn({
+        message: "🟡 Vehicle detection notification skipped - too frequent",
         lastNotificationTime: this.lastNotificationTime?.toISOString(),
-        timeSinceLastNotification: this.lastNotificationTime 
+        timeSinceLastNotification: this.lastNotificationTime
           ? currentTime - this.lastNotificationTime.getTime()
           : 0,
         currentRequestTime: new Date(currentTime).toISOString(),
@@ -59,15 +63,9 @@ class NotificationService {
     try {
       await notificationFunction(eventData);
       this.updateLastNotificationTime();
-      
-      logger.info({
-        message: "Vehicle detection notification sent successfully",
-        notificationTime: this.lastNotificationTime?.toISOString(),
-        requestTime: new Date(currentTime).toISOString(),
-      });
     } catch (error) {
       logger.error({
-        message: "Failed to send vehicle detection notification",
+        message: "❌ Failed to send vehicle detection notification",
         error: error instanceof Error ? error.message : "Unknown error",
         requestTime: new Date(currentTime).toISOString(),
       });
@@ -78,4 +76,4 @@ class NotificationService {
 }
 
 // Экспортируем singleton экземпляр
-export const notificationService = new NotificationService(); 
+export const notificationService = new NotificationService();

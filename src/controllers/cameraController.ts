@@ -12,7 +12,7 @@ async function notifyVehicleDetection(
   const gateLink = process.env.GATE_LINK;
 
   if (!gateLink) {
-    logger.warn("GATE_LINK not configured, skipping vehicle notification");
+    logger.warn("❌ GATE_LINK not configured, skipping vehicle notification");
     return;
   }
 
@@ -20,18 +20,51 @@ async function notifyVehicleDetection(
     const response = await axios.get(gateLink);
 
     logger.info({
-      message: "Vehicle detection notification sent successfully",
+      message: "✅ Vehicle detection notification sent successfully",
       targetUrl: gateLink,
       responseStatus: response.status,
       eventType: eventData.eventType,
     });
   } catch (error) {
     logger.error({
-      message: "Failed to send vehicle detection notification",
+      message: "❌ Failed to send vehicle detection notification",
       error: error instanceof Error ? error.message : "Unknown error",
       targetUrl: gateLink,
       eventType: eventData.eventType,
     });
+  }
+}
+
+async function checkAndHandleVehicleDetection(
+  parsedData: CameraEventData
+): Promise<void> {
+  // Проверяем на vehicle detection при linedetection
+  const detectionRegions = parsedData.DetectionRegionList?.DetectionRegionEntry;
+  const isLineDetection = parsedData.eventType === "linedetection";
+
+  if (isLineDetection && detectionRegions) {
+    const regions = Array.isArray(detectionRegions)
+      ? detectionRegions
+      : [detectionRegions];
+
+    const vehicleRegion = regions.find((region) => {
+      return region.detectionTarget === "vehicle";
+    });
+
+    if (vehicleRegion) {
+      logger.info({
+        message: "🚗 Vehicle detected in linedetection event",
+        regionID: vehicleRegion.regionID,
+        eventType: parsedData.eventType,
+        detectionTarget: vehicleRegion.detectionTarget,
+      });
+
+      // Отправляем уведомление о vehicle detection с ограничением частоты
+      await notificationService.sendVehicleDetectionNotification(
+        parsedData,
+        notifyVehicleDetection
+      );
+    }
   }
 }
 
@@ -60,7 +93,7 @@ async function parseCameraData(rawData: any): Promise<CameraEventData | null> {
     }
   } catch (parseError) {
     logger.error({
-      message: "Failed to parse XML data",
+      message: "❌ Failed to parse XML data",
       error:
         parseError instanceof Error
           ? parseError.message
@@ -80,8 +113,8 @@ export const processCameraData = async (
 
   // Логируем входящие данные для отладки
   logger.info({
-    message: "Received camera data",
-    contentType: req.get("Content-Type"),
+    message: "🔵 Received camera data",
+    ip: req.ip,
   });
 
   // Если данных нет в body, пробуем получить из files (multipart)
@@ -95,20 +128,21 @@ export const processCameraData = async (
     }
   }
 
-  // Если данных нет в body, пробуем получить из raw body
-  if (!xmlData && req.body) {
-    // Ищем XML в теле запроса
-    const bodyStr =
-      typeof req.body === "string" ? req.body : JSON.stringify(req.body);
-    const xmlMatch = bodyStr.match(
-      /<EventNotificationAlert[\s\S]*?<\/EventNotificationAlert>/
-    );
-    if (xmlMatch) {
-      xmlData = xmlMatch[0];
-    }
-  }
+  // // Если данных нет в body, пробуем получить из raw body
+  // if (!xmlData && req.body) {
+  //   // Ищем XML в теле запроса
+  //   const bodyStr =
+  //     typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  //   const xmlMatch = bodyStr.match(
+  //     /<EventNotificationAlert[\s\S]*?<\/EventNotificationAlert>/
+  //   );
+  //   if (xmlMatch) {
+  //     xmlData = xmlMatch[0];
+  //   }
+  // }
 
   if (!xmlData) {
+    logger.error({ message: "❌ No linedetection data provided", ip: req.ip });
     res.status(400).json({ error: "No linedetection data provided" });
     return;
   }
@@ -117,47 +151,12 @@ export const processCameraData = async (
   let parsedData = await parseCameraData(xmlData);
 
   if (!parsedData) {
+    logger.error({ message: "❌ Camera data not parsed", ip: req.ip, xmlData });
     res.status(400).json({ error: "Invalid XML format" });
     return;
   }
 
-  // Логируем полученные данные
-  logger.info({
-    message: "Camera data received and parsed",
-    ip: req.ip,
-    // ...parsedData,
-  });
-
-  // Проверяем на vehicle detection при linedetection
-  const detectionRegions = parsedData.DetectionRegionList?.DetectionRegionEntry;
-
-  const isLineDetection = parsedData.eventType === "linedetection";
-
-  if (isLineDetection && detectionRegions) {
-    const regions = Array.isArray(detectionRegions)
-      ? detectionRegions
-      : [detectionRegions];
-
-    const vehicleRegion = regions.find((region) => {
-      return region.detectionTarget === "vehicle";
-    });
-
-    if (vehicleRegion) {
-      logger.info({
-        message:
-          "Vehicle detected in linedetection event, sending notification",
-        regionID: vehicleRegion.regionID,
-        eventType: parsedData.eventType,
-        detectionTarget: vehicleRegion.detectionTarget,
-      });
-
-      // Отправляем уведомление о vehicle detection с ограничением частоты
-      await notificationService.sendVehicleDetectionNotification(
-        parsedData,
-        notifyVehicleDetection
-      );
-    }
-  }
+  await checkAndHandleVehicleDetection(parsedData);
 
   // Отправляем успешный ответ
   res.status(200).json({
