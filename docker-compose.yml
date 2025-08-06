@@ -2,7 +2,7 @@ services:
   # Основное приложение
   camera-api:
     image: node:18-alpine
-    container_name: camera-api
+    container_name: camera-api-new
     working_dir: /app
     ports:
       - "${PORT:-17777}:${PORT:-17777}"
