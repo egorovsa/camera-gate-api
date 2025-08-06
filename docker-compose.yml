@@ -14,7 +14,6 @@ services:
       - ./package.json:/app/package.json:ro
       - ./package-lock.json:/app/package-lock.json:ro
       - ./tsconfig.json:/app/tsconfig.json:ro
-      - ./.env:/app/.env:ro
       # Сохраняем node_modules в именованном volume для производительности
       - node_modules:/app/node_modules
       # Монтируем директории для логов, загрузок и временных файлов

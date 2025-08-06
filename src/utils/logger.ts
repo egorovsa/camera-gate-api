@@ -3,6 +3,7 @@ import path from "path";
 
 const logLevel = process.env.LOG_LEVEL || "info";
 const logFile = process.env.LOG_FILE || "./logs/app.log";
+const logMaxSize = parseInt(process.env.LOG_MAX_SIZE || "104857600", 10); // 100MB по умолчанию
 
 // Создаем директорию для логов если её нет
 const logDir = path.dirname(logFile);
@@ -66,7 +67,7 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.File({
       filename: logFile,
-      maxsize: 5242880, // 5MB
+      maxsize: logMaxSize, // Размер из переменной окружения (по умолчанию 100MB)
       maxFiles: 5,
     }),
     new winston.transports.Console({
